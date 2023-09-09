@@ -34,6 +34,8 @@ import java.net.URL;
 @Data
 public class Repository {
 
+    public static final Repository MAVEN_CENTRAL = Repository.builder().url("https://repo1.maven.org/maven2/").build();
+
     private final URL url;
     private final String username;
     private final String password;
