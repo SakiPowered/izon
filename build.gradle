@@ -1,0 +1,75 @@
+plugins {
+    id 'org.cadixdev.licenser' version '0.6.1' apply false
+    id 'io.freefair.lombok' version '8.1.0' apply false
+    id 'maven-publish'
+}
+
+group('gg.saki')
+version('1.0.0-SNAPSHOT')
+description('A Java library for runtime dependency management')
+
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+
+    apply plugin: 'org.cadixdev.licenser'
+    apply plugin: 'java-library'
+    apply plugin: 'io.freefair.lombok'
+
+
+    license {
+        header = project.rootProject.file('HEADER')
+        properties {
+            year = '2023'
+        }
+
+        include '**/*.java'
+        charset = this.properties['izonEncoding']
+        lineEnding = '\n'
+
+        style {
+            java = 'BLOCK_COMMENT'
+        }
+    }
+
+    lombok {
+        version = "1.18.28"
+    }
+
+
+    tasks.withType(JavaCompile) {
+        options.encoding = this.properties['izonEncoding']
+        options.compilerArgs += ['-parameters', '-Xlint:all']
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+
+            // TODO: Add javadoc & sources jars. And add saki repo and fill out the rest of the pom info.
+
+            pom {
+                name = 'izon'
+                description = this.description
+                url = 'https://github.com/SakiPowered/izon'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/SakiPowered/izon.git'
+                    developerConnection = 'scm:git:ssh://github.com/SakiPowered/izon.git'
+                    url = 'https://github.com/SakiPowered/izon'
+                }
+            }
+        }
+    }
+}
