@@ -126,7 +126,7 @@ public class Izon {
 
 
         // load it
-        return isolated ? loadLibraryIsolated(library, file) : loadLibrary(library, file);
+        return loadLibrary(library, file, isolated ? isolatedClassLoader : classLoader);
     }
 
     private byte[] downloadLibrary(Library library, DownloadSettings settings) throws IOException {
@@ -160,21 +160,7 @@ public class Izon {
         }
     }
 
-    private Library.Status loadLibraryIsolated(Library library, Path file) {
-        if (this.isolatedClassLoader == null) {
-            throw new IzonException("Isolated class loader could not be created (parent is not a URLClassLoader?)", library, Library.Status.LOAD_FAILED);
-        }
-
-        try {
-            this.isolatedClassLoader.addPath(file);
-        } catch (MalformedURLException e) {
-            throw new IzonException("Failed to add library to isolated class loader", e, library, Library.Status.LOAD_FAILED);
-        }
-
-        return Library.Status.SUCCESS;
-    }
-
-    private Library.Status loadLibrary(Library library, Path file) {
+    private Library.Status loadLibrary(Library library, Path file, IzonClassLoader classLoader) {
         try {
             this.classLoader.addPath(file);
         } catch (MalformedURLException e) {
