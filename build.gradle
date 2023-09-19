@@ -20,10 +20,7 @@ allprojects {
 
 
     license {
-        header = project.rootProject.file('HEADER')
-        properties {
-            year = '2023'
-        }
+        header = project.rootProject.file('LICENSE')
 
         include '**/*.java'
         charset = this.properties['izonEncoding']
