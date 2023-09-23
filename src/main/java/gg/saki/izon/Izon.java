@@ -28,7 +28,8 @@ import gg.saki.izon.classloaders.IzonClassLoader;
 import gg.saki.izon.libraries.Library;
 import gg.saki.izon.utils.DownloadSettings;
 import gg.saki.izon.utils.IzonException;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -49,13 +50,13 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Izon {
 
-    private final @NonNull Path saveDirectory;
+    private final @NotNull Path saveDirectory;
 
-    private final @NonNull IzonClassLoader classLoader;
-    private final IzonClassLoader isolatedClassLoader;
+    private final @NotNull IzonClassLoader classLoader;
+    private final @Nullable IzonClassLoader isolatedClassLoader;
 
 
-    public Izon(Path saveDirectory, ClassLoader classLoader) {
+    public Izon(@NotNull Path saveDirectory, @NotNull ClassLoader classLoader) {
         this.saveDirectory = saveDirectory;
 
         if (!(classLoader instanceof URLClassLoader)) {
@@ -68,7 +69,7 @@ public class Izon {
         this.isolatedClassLoader = parent instanceof URLClassLoader ? IzonClassLoader.create((URLClassLoader) parent) : null;
     }
 
-    public Izon(ClassLoader classLoader) {
+    public Izon(@NotNull ClassLoader classLoader) {
         this(Paths.get("./libs"), classLoader);
 
 
@@ -80,16 +81,16 @@ public class Izon {
         }
     }
 
-    public Library.Status loadLibrary(@NonNull Library library) throws IzonException {
+    public Library.Status loadLibrary(@NotNull Library library) throws IzonException {
         return this.loadLibrary(library, false);
     }
 
-    public Library.Status loadLibrary(@NonNull Library library, boolean isolated) throws IzonException {
+    public Library.Status loadLibrary(@NotNull Library library, boolean isolated) throws IzonException {
         return this.loadLibrary(library, isolated, null);
     }
 
 
-    public Library.Status loadLibrary(@NonNull Library library, boolean isolated, DownloadSettings settings) throws IzonException {
+    public Library.Status loadLibrary(@NotNull Library library, boolean isolated, @Nullable DownloadSettings settings) throws IzonException {
         Path file = this.saveDirectory.resolve(library.getFriendlyPath());
 
         if (Files.exists(file)) {

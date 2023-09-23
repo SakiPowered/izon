@@ -25,22 +25,22 @@
 package gg.saki.izon.libraries;
 
 import gg.saki.izon.utils.IzonException;
-import lombok.Data;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
-@Data
 public class Repository {
 
     public static final Repository MAVEN_CENTRAL = Repository.builder().url("https://repo1.maven.org/maven2/").build();
 
-    private final URL url;
-    private final String username;
-    private final String password;
+    private final @NotNull URL url;
+    private final @Nullable String username;
+    private final @Nullable String password;
 
-    public Repository(URL url, String username, String password) {
+    public Repository(@NotNull URL url, @Nullable String username, @Nullable String password) {
         this.url = url;
         this.username = username;
         this.password = password;
@@ -50,8 +50,33 @@ public class Repository {
         this(url, null, null);
     }
 
+    public @NotNull URL getUrl() {
+        return this.url;
+    }
+
+    public @Nullable String getUsername() {
+        return this.username;
+    }
+
+    public @Nullable String getPassword() {
+        return this.password;
+    }
+
     public boolean hasCredentials() {
         return this.username != null && this.password != null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Repository that = (Repository) o;
+        return this.url.equals(that.url) && Objects.equals(this.username, that.username) && Objects.equals(this.password, that.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.url, this.username, this.password);
     }
 
     public static Builder builder() {
@@ -68,12 +93,12 @@ public class Repository {
             // seal class to prevent external instantiation
         }
 
-        public Builder url(@NonNull URL url) {
+        public Builder url(@NotNull URL url) {
             this.url = url;
             return this;
         }
 
-        public Builder url(@NonNull String url) {
+        public Builder url(@NotNull String url) {
             try {
                 this.url = new URL(url);
             } catch (MalformedURLException e) {
@@ -83,12 +108,12 @@ public class Repository {
             return this;
         }
 
-        public Builder username(String username) {
+        public Builder username(@NotNull String username) {
             this.username = username;
             return this;
         }
 
-        public Builder password(String password) {
+        public Builder password(@NotNull String password) {
             this.password = password;
             return this;
         }

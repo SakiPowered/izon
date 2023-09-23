@@ -24,10 +24,10 @@
 
 package gg.saki.izon.utils;
 
-import lombok.Data;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 
-@Data
+import java.util.Objects;
+
 public class DownloadSettings {
 
     public static final DownloadSettings DEFAULT = DownloadSettings.builder().build();
@@ -36,7 +36,43 @@ public class DownloadSettings {
     private final int readTimeout;
     private final int bufferSize;
 
-    private final @NonNull String userAgent;
+    private final @NotNull String userAgent;
+
+    public DownloadSettings(int connectionTimeout, int readTimeout, int bufferSize, @NotNull String userAgent) {
+        this.connectionTimeout = connectionTimeout;
+        this.readTimeout = readTimeout;
+        this.bufferSize = bufferSize;
+        this.userAgent = userAgent;
+    }
+
+    public int getConnectionTimeout() {
+        return this.connectionTimeout;
+    }
+
+    public int getReadTimeout() {
+        return this.readTimeout;
+    }
+
+    public int getBufferSize() {
+        return this.bufferSize;
+    }
+
+    public @NotNull String getUserAgent() {
+        return this.userAgent;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DownloadSettings that = (DownloadSettings) o;
+        return this.connectionTimeout == that.connectionTimeout && this.readTimeout == that.readTimeout && this.bufferSize == that.bufferSize && this.userAgent.equals(that.userAgent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.connectionTimeout, this.readTimeout, this.bufferSize, this.userAgent);
+    }
 
     public static Builder builder() {
         return new Builder();
@@ -69,7 +105,7 @@ public class DownloadSettings {
             return this;
         }
 
-        public Builder userAgent(@NonNull String userAgent) {
+        public Builder userAgent(@NotNull String userAgent) {
             this.userAgent = userAgent;
             return this;
         }

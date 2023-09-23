@@ -24,33 +24,30 @@
 
 package gg.saki.izon.libraries;
 
-import lombok.Data;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Base64;
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.*;
 
-@Data
 public class Library {
 
-    private final @NonNull Repository repository;
+    private final @NotNull Repository repository;
 
-    private final @NonNull String groupId;
-    private final @NonNull String artifactId;
-    private final @NonNull String version;
+    private final @NotNull String groupId;
+    private final @NotNull String artifactId;
+    private final @NotNull String version;
 
-    private final String classifier;
+    private final @Nullable String classifier;
 
-    private final byte[] sha256;
+    private final byte @Nullable [] sha256;
 
-    private final Collection<Relocation> relocations;
+    private final @Nullable Collection<Relocation> relocations;
 
-    private final @NonNull String path;
-    private final String relocatedPath;
-    private final @NonNull String friendlyPath;
+    private final @NotNull String path;
+    private final @Nullable String relocatedPath;
+    private final @NotNull String friendlyPath;
 
-    public Library(@NonNull Repository repository, @NonNull String groupId, @NonNull String artifactId, @NonNull String version, String classifier, byte[] sha256, Collection<Relocation> relocations) {
+    public Library(@NotNull Repository repository, @NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier, byte @Nullable [] sha256, @Nullable Collection<Relocation> relocations) {
         this.repository = repository;
 
         // Replace all {} with . (to circumvent shading issues)
@@ -75,6 +72,46 @@ public class Library {
 
     }
 
+    public @NotNull Repository getRepository() {
+        return this.repository;
+    }
+
+    public @NotNull String getGroupId() {
+        return this.groupId;
+    }
+
+    public @NotNull String getArtifactId() {
+        return this.artifactId;
+    }
+
+    public @NotNull String getVersion() {
+        return this.version;
+    }
+
+    public @Nullable String getClassifier() {
+        return this.classifier;
+    }
+
+    public byte @Nullable [] getSha256() {
+        return this.sha256;
+    }
+
+    public @Nullable Collection<Relocation> getRelocations() {
+        return this.relocations;
+    }
+
+    public @NotNull String getPath() {
+        return this.path;
+    }
+
+    public @Nullable String getRelocatedPath() {
+        return this.relocatedPath;
+    }
+
+    public @NotNull String getFriendlyPath() {
+        return this.friendlyPath;
+    }
+
     public boolean hasChecksum() {
         return this.sha256 != null;
     }
@@ -85,6 +122,21 @@ public class Library {
 
     public boolean hasRelocations() {
         return this.relocations != null && !this.relocations.isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Library that = (Library) o;
+        return this.repository.equals(that.repository) && this.groupId.equals(that.groupId) && this.artifactId.equals(that.artifactId) && this.version.equals(that.version) && Objects.equals(this.classifier, that.classifier) && Arrays.equals(this.sha256, that.sha256) && Objects.equals(this.relocations, that.relocations) && this.path.equals(that.path) && Objects.equals(this.relocatedPath, that.relocatedPath) && this.friendlyPath.equals(that.friendlyPath);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(this.repository, this.groupId, this.artifactId, this.version, this.classifier, this.relocations, this.path, this.relocatedPath, this.friendlyPath);
+        result = 31 * result + Arrays.hashCode(this.sha256);
+        return result;
     }
 
     public enum Status {
@@ -112,27 +164,27 @@ public class Library {
             // seal class to prevent external instantiation
         }
 
-        public Builder repository(@NonNull Repository repository) {
+        public Builder repository(@NotNull Repository repository) {
             this.repository = repository;
             return this;
         }
 
-        public Builder groupId(@NonNull String groupId) {
+        public Builder groupId(@NotNull String groupId) {
             this.groupId = groupId;
             return this;
         }
 
-        public Builder artifactId(@NonNull String artifactId) {
+        public Builder artifactId(@NotNull String artifactId) {
             this.artifactId = artifactId;
             return this;
         }
 
-        public Builder version(@NonNull String version) {
+        public Builder version(@NotNull String version) {
             this.version = version;
             return this;
         }
 
-        public Builder gav(@NonNull String gav) {
+        public Builder gav(@NotNull String gav) {
             String[] split = gav.split(":");
             if (split.length != 3) {
                 throw new IllegalArgumentException("Invalid GAV: " + gav);
@@ -145,28 +197,30 @@ public class Library {
             return this;
         }
 
-        public Builder classifier(@NonNull String classifier) {
+        public Builder classifier(@NotNull String classifier) {
             this.classifier = classifier;
             return this;
         }
 
-        public Builder checksum(@NonNull byte[] checksum) {
+        public Builder checksum(byte @NotNull [] checksum) {
             this.sha256 = checksum;
             return this;
         }
 
-        public Builder checksum(@NonNull String checksum) {
+        public Builder checksum(@NotNull String checksum) {
             this.sha256 = Base64.getDecoder().decode(checksum);
             return this;
         }
 
-        public Builder relocations(@NonNull Collection<Relocation> relocations) {
+        public Builder relocations(@NotNull Collection<Relocation> relocations) {
             this.relocations = relocations;
             return this;
         }
 
-        public Builder relocate(@NonNull Relocation relocation) {
-            if (this.relocations == null) this.relocations = new LinkedList<>();
+        public Builder relocate(@NotNull Relocation relocation) {
+            if (this.relocations == null) {
+                this.relocations = new LinkedList<>();
+            }
 
             this.relocations.add(relocation);
             return this;

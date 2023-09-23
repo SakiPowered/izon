@@ -27,32 +27,47 @@ package gg.saki.izon.classloaders;
 import gg.saki.izon.classloaders.impl.ReflectionClassLoader;
 import gg.saki.izon.classloaders.impl.UnsafeClassLoader;
 import gg.saki.izon.utils.IzonException;
-import lombok.Getter;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.Objects;
 
 public abstract class IzonClassLoader {
 
-    @Getter
-    private final @NonNull URLClassLoader actualLoader;
+    private final @NotNull URLClassLoader actualLoader;
 
-    public IzonClassLoader(@NonNull URLClassLoader actualLoader) {
+    public IzonClassLoader(@NotNull URLClassLoader actualLoader) {
         this.actualLoader = actualLoader;
     }
 
+    public abstract void addURL(@NotNull URL url) throws IzonException;
 
-
-    public abstract void addURL(@NonNull URL url) throws IzonException;
-
-    public void addPath(@NonNull Path path) throws MalformedURLException {
+    public void addPath(@NotNull Path path) throws MalformedURLException {
         this.addURL(path.toUri().toURL());
     }
 
-    public static IzonClassLoader create(@NonNull URLClassLoader actualLoader) {
+    public @NotNull URLClassLoader getActualLoader() {
+        return this.actualLoader;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IzonClassLoader that = (IzonClassLoader) o;
+        return this.actualLoader.equals(that.actualLoader);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.actualLoader);
+    }
+
+    public static IzonClassLoader create(@NotNull URLClassLoader actualLoader) {
         if (ReflectionClassLoader.isSupported()) {
             return new ReflectionClassLoader(actualLoader);
         }

@@ -26,13 +26,14 @@ package gg.saki.izon.classloaders.impl;
 
 import gg.saki.izon.classloaders.IzonClassLoader;
 import gg.saki.izon.utils.IzonException;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
+import java.util.Objects;
 
 public class UnsafeClassLoader extends IzonClassLoader {
 
@@ -58,7 +59,7 @@ public class UnsafeClassLoader extends IzonClassLoader {
     private final Collection<URL> pathURLs;
 
     @SuppressWarnings("unchecked")
-    public UnsafeClassLoader(@NonNull URLClassLoader actualLoader) {
+    public UnsafeClassLoader(@NotNull URLClassLoader actualLoader) {
         super(actualLoader);
 
         try {
@@ -73,7 +74,7 @@ public class UnsafeClassLoader extends IzonClassLoader {
     }
 
     @Override
-    public void addURL(@NonNull URL url) throws IzonException {
+    public void addURL(@NotNull URL url) throws IzonException {
         if (this.unopenedURLs == null || this.pathURLs == null) {
             throw new IzonException("Could not find unopenedUrls or path fields");
         }
@@ -89,6 +90,29 @@ public class UnsafeClassLoader extends IzonClassLoader {
         long offset = UNSAFE.objectFieldOffset(field);
 
         return UNSAFE.getObject(object, offset);
+    }
+
+    public Collection<URL> getUnopenedURLs() {
+        return this.unopenedURLs;
+    }
+
+    public Collection<URL> getPathURLs() {
+        return this.pathURLs;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        UnsafeClassLoader that = (UnsafeClassLoader) o;
+        return Objects.equals(this.unopenedURLs, that.unopenedURLs) && Objects.equals(this.pathURLs, that.pathURLs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), this.unopenedURLs, this.pathURLs);
     }
 
     public static boolean isSupported() {

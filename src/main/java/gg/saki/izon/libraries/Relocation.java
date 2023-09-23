@@ -24,26 +24,63 @@
 
 package gg.saki.izon.libraries;
 
-import lombok.Data;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 
-@Data
 public class Relocation {
 
-    private final String pattern;
-    private final String relocatedPattern;
+    private final @NotNull String pattern;
+    private final @NotNull String relocatedPattern;
 
-    private final Collection<String> includes;
-    private final Collection<String> excludes;
+    private final @Nullable Collection<String> includes;
+    private final @Nullable Collection<String> excludes;
 
-    public Relocation(String pattern, String relocatedPattern, Collection<String> includes, Collection<String> excludes) {
+    public Relocation(@NotNull String pattern, @NotNull String relocatedPattern, @Nullable Collection<String> includes, @Nullable Collection<String> excludes) {
         this.pattern = pattern.replace("{}", ".");
         this.relocatedPattern = relocatedPattern.replace("{}", ".");
         this.includes = includes;
         this.excludes = excludes;
+    }
+
+    public @NotNull String getPattern() {
+        return this.pattern;
+    }
+
+    public @NotNull String getRelocatedPattern() {
+        return this.relocatedPattern;
+    }
+
+    public @Nullable Collection<String> getIncludes() {
+        return this.includes;
+    }
+
+    public @Nullable Collection<String> getExcludes() {
+        return this.excludes;
+    }
+
+    public boolean hasIncludes() {
+        return this.includes != null && !this.includes.isEmpty();
+    }
+
+    public boolean hasExcludes() {
+        return this.excludes != null && !this.excludes.isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Relocation that = (Relocation) o;
+        return this.pattern.equals(that.pattern) && this.relocatedPattern.equals(that.relocatedPattern) && Objects.equals(this.includes, that.includes) && Objects.equals(this.excludes, that.excludes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.pattern, this.relocatedPattern, this.includes, this.excludes);
     }
 
     public static Builder builder() {
@@ -55,29 +92,47 @@ public class Relocation {
         private String pattern;
         private String relocatedPattern;
 
-        private final Collection<String> includes = new LinkedList<>();
-        private final Collection<String> excludes = new LinkedList<>();
+        private Collection<String> includes;
+        private Collection<String> excludes;
 
         private Builder() {
             // seal class to prevent external instantiation
         }
 
-        public Builder pattern(@NonNull String pattern) {
+        public Builder pattern(@NotNull String pattern) {
             this.pattern = pattern;
             return this;
         }
 
-        public Builder relocatedPattern(@NonNull String relocatedPattern) {
+        public Builder relocatedPattern(@NotNull String relocatedPattern) {
             this.relocatedPattern = relocatedPattern;
             return this;
         }
 
-        public Builder include(@NonNull String include) {
+        public Builder includes(@NotNull Collection<String> includes) {
+            this.includes = includes;
+            return this;
+        }
+
+        public Builder include(@NotNull String include) {
+            if (this.includes == null) {
+                this.includes = new LinkedList<>();
+            }
+
             this.includes.add(include);
             return this;
         }
 
-        public Builder exclude(@NonNull String exclude) {
+        public Builder excludes(@NotNull Collection<String> excludes) {
+            this.excludes = excludes;
+            return this;
+        }
+
+        public Builder exclude(@NotNull String exclude) {
+            if (this.excludes == null) {
+                this.excludes = new LinkedList<>();
+            }
+
             this.excludes.add(exclude);
             return this;
         }

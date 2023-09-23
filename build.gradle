@@ -1,6 +1,5 @@
 plugins {
     id 'org.cadixdev.licenser' version '0.6.1' apply false
-    id 'io.freefair.lombok' version '8.1.0' apply false
     id 'maven-publish'
 }
 
@@ -16,7 +15,10 @@ allprojects {
 
     apply plugin: 'org.cadixdev.licenser'
     apply plugin: 'java-library'
-    apply plugin: 'io.freefair.lombok'
+
+    dependencies {
+        compileOnlyApi('org.jetbrains:annotations:24.0.1')
+    }
 
 
     license {
@@ -29,10 +31,6 @@ allprojects {
         style {
             java = 'BLOCK_COMMENT'
         }
-    }
-
-    lombok {
-        version = "1.18.28"
     }
 
 

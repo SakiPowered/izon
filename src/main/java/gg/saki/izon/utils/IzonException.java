@@ -25,17 +25,15 @@
 package gg.saki.izon.utils;
 
 import gg.saki.izon.libraries.Library;
-import lombok.Getter;
+
+import java.util.Objects;
 
 public class IzonException extends RuntimeException {
 
 
     private static final long serialVersionUID = -1635129916629589177L;
 
-    @Getter
     private Library relatedLibrary;
-
-    @Getter
     private Library.Status status;
 
     public IzonException(String message) {
@@ -102,5 +100,27 @@ public class IzonException extends RuntimeException {
         return this.status != null;
     }
 
+    public Library getRelatedLibrary() {
+        return this.relatedLibrary;
+    }
 
+    public Library.Status getStatus() {
+        return this.status;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+
+        IzonException that = (IzonException) o;
+        return Objects.equals(relatedLibrary, that.relatedLibrary) && status == that.status;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), relatedLibrary, status);
+    }
 }

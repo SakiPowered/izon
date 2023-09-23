@@ -26,7 +26,7 @@ package gg.saki.izon.classloaders.impl;
 
 import gg.saki.izon.classloaders.IzonClassLoader;
 import gg.saki.izon.utils.IzonException;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -50,12 +50,12 @@ public class ReflectionClassLoader extends IzonClassLoader {
         ADD_URL_METHOD = addURLMethod;
     }
 
-    public ReflectionClassLoader(@NonNull URLClassLoader actualLoader) {
+    public ReflectionClassLoader(@NotNull URLClassLoader actualLoader) {
         super(actualLoader);
     }
 
     @Override
-    public void addURL(@NonNull URL url) {
+    public void addURL(@NotNull URL url) {
         try {
             ADD_URL_METHOD.invoke(this.getActualLoader(), url);
         } catch (IllegalAccessException | InvocationTargetException e) {
