@@ -26,29 +26,28 @@ package gg.saki.izon;
 
 import gg.saki.izon.classloaders.IzonClassLoader;
 import gg.saki.izon.libraries.Library;
+import gg.saki.izon.libraries.LibraryStatus;
 import gg.saki.izon.utils.DownloadSettings;
-import gg.saki.izon.utils.IzonException;
+import gg.saki.izon.utils.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
 /**
  *
  */
-public class Izon {
+public final class Izon {
 
     private final @NotNull Path saveDirectory;
 
@@ -60,7 +59,7 @@ public class Izon {
         this.saveDirectory = saveDirectory;
 
         if (!(classLoader instanceof URLClassLoader)) {
-            throw new IzonException("ClassLoader must be an instance of URLClassLoader");
+            throw new IllegalArgumentException("ClassLoader must be an instance of URLClassLoader");
         }
 
         this.classLoader = IzonClassLoader.create((URLClassLoader) classLoader);
@@ -77,28 +76,46 @@ public class Izon {
         if (libsDirectory.exists()) return;
 
         if (!libsDirectory.mkdirs()) {
-            throw new IzonException("Failed to create libs directory");
+            throw new IllegalStateException("Failed to create libs directory");
         }
     }
 
-    public Library.Status loadLibrary(@NotNull Library library) throws IzonException {
+    public LibraryStatus loadLibrary(@NotNull Library library) {
         return this.loadLibrary(library, false);
     }
 
-    public Library.Status loadLibrary(@NotNull Library library, boolean isolated) throws IzonException {
+    public LibraryStatus loadLibrary(@NotNull Library library, boolean isolated) {
         return this.loadLibrary(library, isolated, null);
     }
 
 
-    public Library.Status loadLibrary(@NotNull Library library, boolean isolated, @Nullable DownloadSettings settings) throws IzonException {
-        Path file = this.saveDirectory.resolve(library.getFriendlyPath());
-
-        if (Files.exists(file)) {
-            return Library.Status.ALREADY_EXISTS;
-        }
+    public LibraryStatus loadLibrary(@NotNull Library library, boolean isolated, @Nullable DownloadSettings settings) {
+        Path file = this.saveDirectory.resolve(library.getPath());
 
         if (settings == null) {
-            settings = DownloadSettings.DEFAULT;
+            settings = DownloadSettings.getDefault();
+        }
+
+        if (Files.exists(file)) {
+            // no checksum, just load it
+            if (!library.hasChecksum()) {
+                return loadLibrary(library, file, isolated);
+            }
+
+            try {
+                // read file bytes
+                byte[] data = FileUtil.readAllBytes(file, settings.getBufferSize());
+
+                // check hash, if it fails, return failure
+                if (!library.checkHash(data)) {
+                    return LibraryStatus.failure(library, "Checksum failed");
+                }
+
+                // else, load it
+                return loadLibrary(library, file, isolated);
+            } catch (IOException | NoSuchAlgorithmException e) {
+                return LibraryStatus.failure(library, "Failed to perform checksum", e);
+            }
         }
 
 
@@ -106,38 +123,31 @@ public class Izon {
         try {
             byte[] data = downloadLibrary(library, settings);
 
-            // check sha256
-            if (library.hasChecksum() && !checkHash(library, data)) {
-                throw new IzonException("SHA-256 checksum failed", library, Library.Status.CHECKSUM_MISMATCH);
+            // check hash, if it fails, return failure
+            if (!library.checkHash(data)) {
+                return LibraryStatus.failure(library, "Checksum failed");
             }
 
 
+            // create parent directories (G/A/V)
+            Files.createDirectories(file.getParent());
+
             // create temp file
-            Path out = Files.createTempFile(this.saveDirectory, library.getFriendlyPath(), ".tmplib");
+            Path out = Files.createTempFile(file.getParent(), file.toFile().getName(), ".tmplib");
             out.toFile().deleteOnExit();
 
             // write and move
             Files.write(out, data);
             Files.move(out, file);
-        } catch (IOException e) {
-            throw new IzonException("Failed to download library", e, library, Library.Status.DOWNLOAD_FAILED);
+        } catch (IOException | NoSuchAlgorithmException e) {
+            return LibraryStatus.failure(library, "Failed to download library", e);
         }
 
         // TODO: relocate it
 
 
         // load it
-
-        if (isolated) {
-            // its isolated, was the isolated class loader successfully created?
-            if (this.isolatedClassLoader == null) {
-                throw new IzonException("Isolated class loader could not be created (parent is not a URLClassLoader?)", library, Library.Status.LOAD_FAILED);
-            }
-
-            return loadLibrary(library, file, this.isolatedClassLoader);
-        }
-
-        return loadLibrary(library, file, this.classLoader);
+        return loadLibrary(library, file, isolated);
     }
 
     private byte[] downloadLibrary(Library library, DownloadSettings settings) throws IOException {
@@ -148,36 +158,38 @@ public class Izon {
         connection.setRequestProperty("User-Agent", settings.getUserAgent());
 
         try (InputStream in = connection.getInputStream()) {
-            int length;
-            byte[] buffer = new byte[settings.getBufferSize()];
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            while ((length = in.read(buffer)) != -1) {
-                out.write(buffer, 0, length);
-            }
-
-            return out.toByteArray();
+            return FileUtil.readAllBytes(in, settings.getBufferSize());
         }
     }
 
-    private boolean checkHash(Library library, byte[] data) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(data);
+    private LibraryStatus loadLibrary(Library library, Path file, boolean isolated) {
+        IzonClassLoader loader = isolated ? this.isolatedClassLoader : this.classLoader;
 
-            return MessageDigest.isEqual(hash, library.getSha256());
-        } catch (NoSuchAlgorithmException e) {
-            throw new IzonException("Could not find SHA-256 algorithm", e, library, Library.Status.LOAD_FAILED);
+        if (loader == null) {
+            // only isolated can be null, so check if it was successfully created or not
+            return LibraryStatus.failure(library, "Isolated class loader could not be created (parent is not a URLClassLoader?)");
         }
+
+        try {
+            loader.addPath(file);
+        } catch (IOException e) {
+            return LibraryStatus.failure(library, "Failed to add library to class loader", e);
+        }
+
+        return LibraryStatus.success(library, "Library loaded successfully");
     }
 
-    private Library.Status loadLibrary(Library library, Path file, IzonClassLoader classLoader) {
-        try {
-            classLoader.addPath(file);
-        } catch (MalformedURLException e) {
-            throw new IzonException("Failed to add library to class loader", e, library, Library.Status.LOAD_FAILED);
-        }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        return Library.Status.SUCCESS;
+        Izon izon = (Izon) o;
+        return this.saveDirectory.equals(izon.saveDirectory) && this.classLoader.equals(izon.classLoader) && Objects.equals(this.isolatedClassLoader, izon.isolatedClassLoader);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.saveDirectory, this.classLoader, this.isolatedClassLoader);
     }
 }

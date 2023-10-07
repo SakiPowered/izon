@@ -28,9 +28,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class DownloadSettings {
+public final class DownloadSettings {
 
-    public static final DownloadSettings DEFAULT = DownloadSettings.builder().build();
+    private static DownloadSettings DEFAULT;
 
     private final int connectionTimeout;
     private final int readTimeout;
@@ -43,6 +43,14 @@ public class DownloadSettings {
         this.readTimeout = readTimeout;
         this.bufferSize = bufferSize;
         this.userAgent = userAgent;
+    }
+
+    public static DownloadSettings getDefault() {
+        if (DownloadSettings.DEFAULT == null) {
+            DownloadSettings.DEFAULT = DownloadSettings.builder().build();
+        }
+
+        return DEFAULT;
     }
 
     public int getConnectionTimeout() {

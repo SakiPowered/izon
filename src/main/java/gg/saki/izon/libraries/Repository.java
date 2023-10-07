@@ -24,7 +24,6 @@
 
 package gg.saki.izon.libraries;
 
-import gg.saki.izon.utils.IzonException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,9 +31,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
-public class Repository {
+public final class Repository {
 
-    public static final Repository MAVEN_CENTRAL = Repository.builder().url("https://repo1.maven.org/maven2/").build();
+    private static Repository MAVEN_CENTRAL;
+    private static Repository SAKI_CENTRAL;
 
     private final @NotNull URL url;
     private final @Nullable String username;
@@ -48,6 +48,22 @@ public class Repository {
 
     public Repository(URL url) {
         this(url, null, null);
+    }
+
+    public static Repository getMavenCentral() {
+        if (Repository.MAVEN_CENTRAL == null) {
+            Repository.MAVEN_CENTRAL = Repository.builder().url("https://repo1.maven.org/maven2/").build();
+        }
+
+        return Repository.MAVEN_CENTRAL;
+    }
+
+    public static Repository getSakiCentral() {
+        if (Repository.SAKI_CENTRAL == null) {
+            Repository.SAKI_CENTRAL = Repository.builder().url("https://repo.saki.gg/central/").build();
+        }
+
+        return Repository.SAKI_CENTRAL;
     }
 
     public @NotNull URL getUrl() {
@@ -102,7 +118,7 @@ public class Repository {
             try {
                 this.url = new URL(url);
             } catch (MalformedURLException e) {
-                throw new IzonException(e);
+                throw new IllegalStateException(e);
             }
 
             return this;

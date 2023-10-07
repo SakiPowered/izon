@@ -22,47 +22,42 @@
  * SOFTWARE.
  */
 
-package gg.saki.izon.classloaders.impl;
+package gg.saki.izon.utils;
 
-import gg.saki.izon.classloaders.IzonClassLoader;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
-public final class ReflectionClassLoader extends IzonClassLoader {
+public final class FileUtil {
 
-    private static final Method ADD_URL_METHOD;
-
-    static {
-        Method addURLMethod;
-
-        try {
-            addURLMethod = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            addURLMethod.setAccessible(true);
-        } catch (Throwable t) {
-            addURLMethod = null;
-        }
-
-        ADD_URL_METHOD = addURLMethod;
+    private FileUtil() {
+        throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    public ReflectionClassLoader(@NotNull URLClassLoader actualLoader) {
-        super(actualLoader);
-    }
+    public static byte @NotNull [] readAllBytes(@NotNull InputStream in, int bufferSize) throws IOException {
+        try (in; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            int length;
+            byte[] buffer = new byte[bufferSize];
 
-    @Override
-    public void addURL(@NotNull URL url) throws IllegalStateException {
-        try {
-            ADD_URL_METHOD.invoke(this.getActualLoader(), url);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(e);
+            while ((length = in.read(buffer)) != -1) {
+                out.write(buffer, 0, length);
+            }
+
+            return out.toByteArray();
         }
     }
 
-    public static boolean isSupported() {
-        return ADD_URL_METHOD != null;
+    public static byte @NotNull [] readAllBytes(@NotNull Path path, int bufferSize) throws IOException {
+        try (InputStream in = Files.newInputStream(path, StandardOpenOption.READ)) {
+            return readAllBytes(in, bufferSize);
+        }
     }
+
+
+
 }

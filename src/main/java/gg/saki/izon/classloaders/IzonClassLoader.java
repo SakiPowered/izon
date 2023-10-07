@@ -26,7 +26,6 @@ package gg.saki.izon.classloaders;
 
 import gg.saki.izon.classloaders.impl.ReflectionClassLoader;
 import gg.saki.izon.classloaders.impl.UnsafeClassLoader;
-import gg.saki.izon.utils.IzonException;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
@@ -43,7 +42,7 @@ public abstract class IzonClassLoader {
         this.actualLoader = actualLoader;
     }
 
-    public abstract void addURL(@NotNull URL url) throws IzonException;
+    public abstract void addURL(@NotNull URL url) throws IllegalStateException;
 
     public void addPath(@NotNull Path path) throws MalformedURLException {
         this.addURL(path.toUri().toURL());
@@ -77,6 +76,6 @@ public abstract class IzonClassLoader {
         }
 
 
-        throw new IzonException("Could not find a supported class loader");
+        throw new IllegalStateException("Could not find a supported class loader");
     }
 }

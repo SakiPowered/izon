@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
 
-public class Relocation {
+public final class Relocation {
 
     private final @NotNull String pattern;
     private final @NotNull String relocatedPattern;

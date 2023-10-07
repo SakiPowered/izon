@@ -25,7 +25,7 @@ allprojects {
         header = project.rootProject.file('LICENSE')
 
         include '**/*.java'
-        charset = this.properties['izonEncoding']
+        charset = this.properties['textEncoding']
         lineEnding = '\n'
 
         style {
@@ -34,8 +34,8 @@ allprojects {
     }
 
 
-    tasks.withType(JavaCompile) {
-        options.encoding = this.properties['izonEncoding']
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = this.properties['textEncoding']
         options.compilerArgs += ['-parameters', '-Xlint:all']
     }
 }

@@ -25,7 +25,6 @@
 package gg.saki.izon.classloaders.impl;
 
 import gg.saki.izon.classloaders.IzonClassLoader;
-import gg.saki.izon.utils.IzonException;
 import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
 
@@ -35,7 +34,7 @@ import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.Objects;
 
-public class UnsafeClassLoader extends IzonClassLoader {
+public final class UnsafeClassLoader extends IzonClassLoader {
 
     private static final Unsafe UNSAFE;
 
@@ -69,14 +68,14 @@ public class UnsafeClassLoader extends IzonClassLoader {
             this.pathURLs = (Collection<URL>) fetchField(ucp.getClass(), ucp, "path");
 
         } catch (NoSuchFieldException e) {
-            throw new IzonException(e);
+            throw new IllegalStateException("Couldn't find fields when creating UnsafeClassLoader", e);
         }
     }
 
     @Override
-    public void addURL(@NotNull URL url) throws IzonException {
+    public void addURL(@NotNull URL url) throws IllegalStateException {
         if (this.unopenedURLs == null || this.pathURLs == null) {
-            throw new IzonException("Could not find unopenedUrls or path fields");
+            throw new IllegalStateException("Could not find unopenedUrls or path fields");
         }
 
         synchronized (this.unopenedURLs) {
