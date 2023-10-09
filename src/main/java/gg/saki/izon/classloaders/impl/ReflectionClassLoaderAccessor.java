@@ -24,7 +24,7 @@
 
 package gg.saki.izon.classloaders.impl;
 
-import gg.saki.izon.classloaders.IzonClassLoader;
+import gg.saki.izon.classloaders.IzonClassLoaderAccessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -32,7 +32,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-public final class ReflectionClassLoader extends IzonClassLoader {
+public final class ReflectionClassLoaderAccessor extends IzonClassLoaderAccessor {
 
     private static final Method ADD_URL_METHOD;
 
@@ -49,7 +49,7 @@ public final class ReflectionClassLoader extends IzonClassLoader {
         ADD_URL_METHOD = addURLMethod;
     }
 
-    public ReflectionClassLoader(@NotNull URLClassLoader actualLoader) {
+    public ReflectionClassLoaderAccessor(@NotNull URLClassLoader actualLoader) {
         super(actualLoader);
     }
 

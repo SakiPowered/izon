@@ -24,8 +24,8 @@
 
 package gg.saki.izon.classloaders;
 
-import gg.saki.izon.classloaders.impl.ReflectionClassLoader;
-import gg.saki.izon.classloaders.impl.UnsafeClassLoader;
+import gg.saki.izon.classloaders.impl.ReflectionClassLoaderAccessor;
+import gg.saki.izon.classloaders.impl.UnsafeClassLoaderAccessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
@@ -34,11 +34,11 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public abstract class IzonClassLoader {
+public abstract class IzonClassLoaderAccessor {
 
     private final @NotNull URLClassLoader actualLoader;
 
-    public IzonClassLoader(@NotNull URLClassLoader actualLoader) {
+    public IzonClassLoaderAccessor(@NotNull URLClassLoader actualLoader) {
         this.actualLoader = actualLoader;
     }
 
@@ -57,7 +57,7 @@ public abstract class IzonClassLoader {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        IzonClassLoader that = (IzonClassLoader) o;
+        IzonClassLoaderAccessor that = (IzonClassLoaderAccessor) o;
         return this.actualLoader.equals(that.actualLoader);
     }
 
@@ -66,13 +66,13 @@ public abstract class IzonClassLoader {
         return Objects.hash(this.actualLoader);
     }
 
-    public static IzonClassLoader create(@NotNull URLClassLoader actualLoader) {
-        if (ReflectionClassLoader.isSupported()) {
-            return new ReflectionClassLoader(actualLoader);
+    public static IzonClassLoaderAccessor create(@NotNull URLClassLoader actualLoader) {
+        if (ReflectionClassLoaderAccessor.isSupported()) {
+            return new ReflectionClassLoaderAccessor(actualLoader);
         }
 
-        if (UnsafeClassLoader.isSupported()) {
-            return new UnsafeClassLoader(actualLoader);
+        if (UnsafeClassLoaderAccessor.isSupported()) {
+            return new UnsafeClassLoaderAccessor(actualLoader);
         }
 
 

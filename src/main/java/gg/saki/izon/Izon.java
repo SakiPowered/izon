@@ -24,7 +24,8 @@
 
 package gg.saki.izon;
 
-import gg.saki.izon.classloaders.IzonClassLoader;
+import gg.saki.izon.classloaders.IsolatedClassLoader;
+import gg.saki.izon.classloaders.IzonClassLoaderAccessor;
 import gg.saki.izon.libraries.Library;
 import gg.saki.izon.libraries.LibraryStatus;
 import gg.saki.izon.utils.DownloadSettings;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
@@ -42,7 +44,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  *
@@ -51,8 +56,10 @@ public final class Izon {
 
     private final @NotNull Path saveDirectory;
 
-    private final @NotNull IzonClassLoader classLoader;
-    private final @Nullable IzonClassLoader isolatedClassLoader;
+    private final @NotNull IzonClassLoaderAccessor classLoader;
+    private final @NotNull IzonClassLoaderAccessor defaultIsolatedClassLoader;
+
+    private final @NotNull Map<Set<Library>, IzonClassLoaderAccessor> isolatedClassLoaders = new HashMap<>();
 
 
     public Izon(@NotNull Path saveDirectory, @NotNull ClassLoader classLoader) {
@@ -62,10 +69,8 @@ public final class Izon {
             throw new IllegalArgumentException("ClassLoader must be an instance of URLClassLoader");
         }
 
-        this.classLoader = IzonClassLoader.create((URLClassLoader) classLoader);
-
-        ClassLoader parent = ClassLoader.getSystemClassLoader().getParent();
-        this.isolatedClassLoader = parent instanceof URLClassLoader ? IzonClassLoader.create((URLClassLoader) parent) : null;
+        this.classLoader = IzonClassLoaderAccessor.create((URLClassLoader) classLoader);
+        this.defaultIsolatedClassLoader = IzonClassLoaderAccessor.create(new IsolatedClassLoader(new URL[0]));
     }
 
     public Izon(@NotNull ClassLoader classLoader) {
@@ -80,16 +85,45 @@ public final class Izon {
         }
     }
 
+    public IzonClassLoaderAccessor getIsolatedClassLoaderFor(@NotNull Set<Library> libraries) {
+        IzonClassLoaderAccessor prevLoader = this.isolatedClassLoaders.get(libraries);
+
+        if (prevLoader != null) {
+            return prevLoader;
+        }
+
+        synchronized (this.isolatedClassLoaders) {
+            URL[] urls = libraries.stream().map(l -> {
+                try {
+                    return new URL(l.getRepository().getUrl() + l.getPath());
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException(e);
+                }
+            }).toArray(URL[]::new);
+
+            try (IsolatedClassLoader loader = new IsolatedClassLoader(urls)) {
+                return this.isolatedClassLoaders.put(libraries, IzonClassLoaderAccessor.create(loader));
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+
     public LibraryStatus loadLibrary(@NotNull Library library) {
-        return this.loadLibrary(library, false);
+        return this.loadLibrary(library, this.classLoader);
     }
 
-    public LibraryStatus loadLibrary(@NotNull Library library, boolean isolated) {
-        return this.loadLibrary(library, isolated, null);
+    public LibraryStatus loadIsolatedLibrary(@NotNull Library library) {
+        return this.loadLibrary(library, this.defaultIsolatedClassLoader);
+    }
+
+    public LibraryStatus loadLibrary(@NotNull Library library, @NotNull IzonClassLoaderAccessor loaderAccessor) {
+        return this.loadLibrary(library, loaderAccessor, null);
     }
 
 
-    public LibraryStatus loadLibrary(@NotNull Library library, boolean isolated, @Nullable DownloadSettings settings) {
+    public LibraryStatus loadLibrary(@NotNull Library library, @NotNull IzonClassLoaderAccessor loaderAccessor, @Nullable DownloadSettings settings) {
         Path file = this.saveDirectory.resolve(library.getPath());
 
         if (settings == null) {
@@ -99,7 +133,7 @@ public final class Izon {
         if (Files.exists(file)) {
             // no checksum, just load it
             if (!library.hasChecksum()) {
-                return loadLibrary(library, file, isolated);
+                return loadLibrary(library, file, loaderAccessor);
             }
 
             try {
@@ -112,7 +146,7 @@ public final class Izon {
                 }
 
                 // else, load it
-                return loadLibrary(library, file, isolated);
+                return loadLibrary(library, file, loaderAccessor);
             } catch (IOException | NoSuchAlgorithmException e) {
                 return LibraryStatus.failure(library, "Failed to perform checksum", e);
             }
@@ -147,7 +181,7 @@ public final class Izon {
 
 
         // load it
-        return loadLibrary(library, file, isolated);
+        return loadLibrary(library, file, loaderAccessor);
     }
 
     private byte[] downloadLibrary(Library library, DownloadSettings settings) throws IOException {
@@ -162,16 +196,9 @@ public final class Izon {
         }
     }
 
-    private LibraryStatus loadLibrary(Library library, Path file, boolean isolated) {
-        IzonClassLoader loader = isolated ? this.isolatedClassLoader : this.classLoader;
-
-        if (loader == null) {
-            // only isolated can be null, so check if it was successfully created or not
-            return LibraryStatus.failure(library, "Isolated class loader could not be created (parent is not a URLClassLoader?)");
-        }
-
+    private LibraryStatus loadLibrary(Library library, Path file, IzonClassLoaderAccessor loaderAccessor) {
         try {
-            loader.addPath(file);
+            loaderAccessor.addPath(file);
         } catch (IOException e) {
             return LibraryStatus.failure(library, "Failed to add library to class loader", e);
         }
@@ -185,11 +212,11 @@ public final class Izon {
         if (o == null || getClass() != o.getClass()) return false;
 
         Izon izon = (Izon) o;
-        return this.saveDirectory.equals(izon.saveDirectory) && this.classLoader.equals(izon.classLoader) && Objects.equals(this.isolatedClassLoader, izon.isolatedClassLoader);
+        return this.saveDirectory.equals(izon.saveDirectory) && this.classLoader.equals(izon.classLoader) && this.defaultIsolatedClassLoader.equals(izon.defaultIsolatedClassLoader) && this.isolatedClassLoaders.equals(izon.isolatedClassLoaders);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.saveDirectory, this.classLoader, this.isolatedClassLoader);
+        return Objects.hash(this.saveDirectory, this.classLoader, this.defaultIsolatedClassLoader, this.isolatedClassLoaders);
     }
 }

@@ -24,7 +24,7 @@
 
 package gg.saki.izon.classloaders.impl;
 
-import gg.saki.izon.classloaders.IzonClassLoader;
+import gg.saki.izon.classloaders.IzonClassLoaderAccessor;
 import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
 
@@ -34,7 +34,7 @@ import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.Objects;
 
-public final class UnsafeClassLoader extends IzonClassLoader {
+public final class UnsafeClassLoaderAccessor extends IzonClassLoaderAccessor {
 
     private static final Unsafe UNSAFE;
 
@@ -58,7 +58,7 @@ public final class UnsafeClassLoader extends IzonClassLoader {
     private final Collection<URL> pathURLs;
 
     @SuppressWarnings("unchecked")
-    public UnsafeClassLoader(@NotNull URLClassLoader actualLoader) {
+    public UnsafeClassLoaderAccessor(@NotNull URLClassLoader actualLoader) {
         super(actualLoader);
 
         try {
@@ -105,7 +105,7 @@ public final class UnsafeClassLoader extends IzonClassLoader {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        UnsafeClassLoader that = (UnsafeClassLoader) o;
+        UnsafeClassLoaderAccessor that = (UnsafeClassLoaderAccessor) o;
         return Objects.equals(this.unopenedURLs, that.unopenedURLs) && Objects.equals(this.pathURLs, that.pathURLs);
     }
 
